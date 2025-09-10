@@ -1,0 +1,38 @@
+services:
+  auth_server:
+    build: 
+      context: ./authServer
+      dockerfile: deployment/Dockerfile
+    container_name: auth_server
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+    networks:
+      - pragma
+
+  solicitudes:
+    build: 
+      context: ./solicitudes
+      dockerfile: deployment/Dockerfile
+    container_name: solicitudes
+    ports:
+      - "8081:8081"
+    depends_on:
+      - postgres
+    networks:
+      - pragma
+
+  postgres:
+    image: postgres:12
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+    ports:
+      - "5432:5432"
+    networks:
+      - pragma
+
+networks:
+  pragma:
+    driver: bridge
