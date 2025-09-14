@@ -1,33 +1,58 @@
 services:
-  auth_server:
+  auth-server:
     build: 
       context: ./authServer
       dockerfile: deployment/Dockerfile
-    container_name: auth_server
+    container_name: auth-server
     ports:
       - "8080:8080"
     depends_on:
       - postgres
     networks:
       - pragma
+    environment:
+      - AUTH_URL=http://auth-server:8080
+      - DB_HOST=postgres
+      - DB_USER=admin
+      - DB_PASSWORD=admin
+      - AUTH_SERVER=auth-server
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:8080/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
 
   solicitudes:
     build: 
       context: ./solicitudes
       dockerfile: deployment/Dockerfile
     container_name: solicitudes
+    environment:
+      - AUTH_URL=http://auth-server:8080
+      - DB_HOST=postgres
+      - DB_USER=admin
+      - DB_PASSWORD=admin
+      - AUTH_SERVER=auth-server
     ports:
       - "8081:8081"
     depends_on:
-      - postgres
+      postgres:
+        condition: service_started
+      auth-server:
+        condition: service_healthy
     networks:
       - pragma
 
   postgres:
-    image: postgres:12
+    image: postgres:11
+    container_name: postgres
     environment:
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: admin
+      POSTGRES_DB: crediYa
+    volumes:
+      - postgres-crediYa:/var/lib/postgresql/data
     ports:
       - "5432:5432"
     networks:
@@ -36,3 +61,6 @@ services:
 networks:
   pragma:
     driver: bridge
+
+volumes:
+  postgres-crediYa:
